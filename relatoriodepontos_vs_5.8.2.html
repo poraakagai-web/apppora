@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório Integrado</title>
+    <link rel="stylesheet" href="styles_v5.7.0.css">
+</head>
+<body>
+    <h1>Relatório Integrado</h1>
+    
+    <div class="header-controls">
+        <button id="toggleDarkMode">Ativar Modo Escuro</button>
+        <button id="openHelpModal" class="secondary-button">
+            <span class="icon">❓</span>
+            Ajuda
+            <small style="opacity: 0.7; font-size: 11px;">(F1)</small>
+        </button>
+        <button id="openDatabaseModal" class="primary-button">
+            <span class="icon">📊</span>
+            Configurar Bancos de Dados
+            <small style="opacity: 0.7; font-size: 11px;">(Ctrl+D)</small>
+        </button>
+    </div>
+    
+    <!-- Navegação por Abas -->
+    <div class="tab-navigation">
+        <button class="tab-button active" data-tab="relatorio-principal">
+            <span class="icon">📊</span>
+            Relatório Principal
+        </button>
+        <button class="tab-button" data-tab="controle-prazos">
+            <span class="icon">⏰</span>
+            Controle de Prazos
+        </button>
+        <button class="tab-button" data-tab="conferencia-fisica">
+            <span class="icon">📦</span>
+            Conferência Física
+        </button>
+        <button class="tab-button" data-tab="acompanhamento-distribuicao">
+            <span class="icon">🚚</span>
+            Acompanhamento de Distribuição
+        </button>
+        <button class="tab-button" data-tab="conferencia-devolucoes">
+            <span class="icon">📋</span>
+            Conferência de Devoluções
+        </button>
+        <button class="tab-button" data-tab="gerenciamento-objetos">
+            <span class="icon">🔄</span>
+            Gerenciamento de Objetos
+        </button>
+    </div>
+    
+    <!-- Modal para inserção de bancos de dados -->
+    <div id="databaseModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Configuração dos Bancos de Dados</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="database-section">
+                    <label for="listDatabase">
+                        <span class="icon">📋</span>
+                        Banco de Dados de Lista e Funcionários
+                    </label>
+                    <textarea id="listDatabase" rows="8" placeholder="Cole aqui o banco de dados de Lista e Funcionários (separado por tabulações)"></textarea>
+                    <div class="help-text">Formato esperado: Distrito | Funcionário | ... | Lista</div>
+                </div>
+                
+                <div class="database-section">
+                    <label for="objectDatabase">
+                        <span class="icon">🏠</span>
+                        Banco de Dados de Objetos e Endereços
+                    </label>
+                    <textarea id="objectDatabase" rows="8" placeholder="Cole aqui o banco de dados de Objetos e Endereços (separado por tabulações)"></textarea>
+                    <div class="help-text">Formato esperado: Lista | Objeto | ... | Endereço</div>
+                </div>
+                
+                <div class="database-section">
+                    <label for="prazoDatabase">
+                        <span class="icon">⏰</span>
+                        Banco de Dados de Prazos
+                    </label>
+                    <textarea id="prazoDatabase" rows="8" placeholder="Cole aqui o banco de dados de Prazos (separado por tabulações)"></textarea>
+                    <div class="help-text">Formato esperado: Nº Objeto (coluna 1) | ... | Prazo Final (coluna 12) - Data no formato DD/MM/AAAA ou AAAA-MM-DD</div>
+                </div>
+                
+                <div class="database-section">
+                    <label for="distribuicaoDatabase">
+                        <span class="icon">🚚</span>
+                        Banco de Dados de Distribuição
+                    </label>
+                    <textarea id="distribuicaoDatabase" rows="8" placeholder="Cole aqui o banco de dados de Distribuição (separado por tabulações)"></textarea>
+                    <div class="help-text">Formato esperado: Coluna 2 (Nº objeto) | Coluna 4 (Horário de baixa) | Coluna 8 (Status)</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="json-controls">
+                    <input type="file" id="importJsonFile" accept=".json" style="display: none;">
+                    <button id="exportJson" class="secondary-button">
+                        <span class="icon">📤</span>
+                        Exportar JSON
+                    </button>
+                    <button id="importJson" class="secondary-button">
+                        <span class="icon">📥</span>
+                        Importar JSON
+                    </button>
+                </div>
+                <div class="main-controls">
+                    <button id="clearDatabases" class="secondary-button">Limpar Dados</button>
+                    <button id="saveDatabases" class="primary-button">Salvar e Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de Ajuda -->
+    <div id="helpModal" class="modal">
+        <div class="modal-content help-modal-content">
+            <div class="modal-header">
+                <h2>Guia de Ajuda - Relatório Integrado</h2>
+                <span class="close help-close">&times;</span>
+            </div>
+            <div class="modal-body help-modal-body">
+                <iframe id="helpFrame" src="help_guide_complete.html" frameborder="0"></iframe>
+            </div>
+            <div class="modal-footer">
+                <button id="openHelpNewWindow" class="secondary-button">
+                    <span class="icon">🔗</span>
+                    Abrir em Nova Janela
+                </button>
+                <button id="closeHelpModal" class="primary-button">Fechar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Status dos bancos de dados -->
+    <div id="databaseStatus" class="database-status" style="display: none;">
+        <div class="status-item">
+            <span class="icon">📋</span>
+            <span id="listStatus">Lista: Não carregado</span>
+        </div>
+        <div class="status-item">
+            <span class="icon">🏠</span>
+            <span id="objectStatus">Objetos: Não carregado</span>
+        </div>
+        <div class="status-item">
+            <span class="icon">⏰</span>
+            <span id="prazoStatus">Prazos: Não carregado</span>
+        </div>
+        <div class="status-item">
+            <span class="icon">🚚</span>
+            <span id="distribuicaoStatus">Distribuição: Não carregado</span>
+        </div>
+    </div>
+    
+    <!-- Aba: Relatório Principal -->
+    <div id="relatorio-principal" class="tab-content active">
+        <div class="controls-section">
+            <div class="filter-section">
+                <div class="filter-group">
+                    <label for="searchFilter">
+                        <span class="icon">🔍</span>
+                        Buscar:
+                    </label>
+                    <input type="text" id="searchFilter" placeholder="Buscar por distrito, funcionário ou lista...">
+                </div>
+                
+                <div class="filter-group">
+                    <label for="filterGrade">
+                        <span class="icon">🔢</span>
+                        Grade:
+                    </label>
+                    <select id="filterGrade">
+                        <option value="">Todas as Grades</option>
+                        <option value="3">Grade 3 (inicia com "3")</option>
+                        <option value="6">Grade 6 (inicia com "6")</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="filterSide">
+                        <span class="icon">↔️</span>
+                        Lado:
+                    </label>
+                    <select id="filterSide">
+                        <option value="">Todos os Lados</option>
+                        <option value="A">Lado A (termina com "A")</option>
+                        <option value="B">Lado B (termina com "B")</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <button id="generateReport" class="primary-button">
+                    <span class="icon">📊</span>
+                    Gerar Relatório
+                    <small style="opacity: 0.7; font-size: 11px;">(Ctrl+R)</small>
+                </button>
+                <button id="findCoincidentPoints" class="secondary-button">
+                    <span class="icon">🎯</span>
+                    Pontos Coincidentes
+                    <small style="opacity: 0.7; font-size: 11px;">(Ctrl+F)</small>
+                </button>
+            </div>
+            
+            <div class="export-buttons">
+                <button id="exportExcel" class="secondary-button">
+                    <span class="icon">📈</span>
+                    Exportar Excel
+                    <small style="opacity: 0.7; font-size: 11px;">(Ctrl+E)</small>
+                </button>
+                <button id="exportCSV" class="secondary-button">
+                    <span class="icon">📄</span>
+                    Exportar CSV
+                </button>
+                <button id="printReport" class="secondary-button">
+                    <span class="icon">🖨️</span>
+                    Imprimir
+                    <small style="opacity: 0.7; font-size: 11px;">(Ctrl+P)</small>
+                </button>
+            </div>
+        </div>
+        
+        <div id="summarySection" class="summary-grid"></div>
+        
+        <table id="reportTable">
+            <thead>
+                <tr>
+                    <th data-column="distrito">Distrito <span class="sort-hint">↕️</span></th>
+                    <th data-column="funcionario">Funcionário <span class="sort-hint">↕️</span></th>
+                    <th data-column="lista">Número da Lista <span class="sort-hint">↕️</span></th>
+                    <th data-column="totalObjetos">Total de Objetos <span class="sort-hint">↕️</span></th>
+                    <th data-column="totalPontos">Total de Pontos <span class="sort-hint">↕️</span></th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <div id="coincidentPointsSection" class="coincident-points" style="display: none;">
+            <h2>Pontos Coincidentes entre Grade 6 e Grade 3</h2>
+            <div id="coincidentSummary" class="summary-grid"></div>
+            <table id="coincidentPointsTable">
+                <thead>
+                    <tr>
+                        <th>Endereço</th>
+                        <th>Distrito (Grade 6)</th>
+                        <th>Grade 6 (Listas)</th>
+                        <th>Distrito (Grade 3)</th>
+                        <th>Grade 3 (Listas)</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Aba: Controle de Prazos -->
+    <div id="controle-prazos" class="tab-content">
+        <div class="controls-section">
+            <div class="filter-section">
+                <div class="filter-group">
+                    <label for="prazoDistritoFilter">
+                        <span class="icon">🏢</span>
+                        Distrito:
+                    </label>
+                    <select id="prazoDistritoFilter">
+                        <option value="">Todos os Distritos</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="prazoStatusFilter">
+                        <span class="icon">📊</span>
+                        Status:
+                    </label>
+                    <select id="prazoStatusFilter">
+                        <option value="">Todos os Status</option>
+                        <option value="Atrasado">Atrasado</option>
+                        <option value="Vence Hoje">Vence Hoje</option>
+                        <option value="No Prazo">No Prazo</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="prazoObjetoFilter">
+                        <span class="icon">📦</span>
+                        Buscar Objeto:
+                    </label>
+                    <input type="text" id="prazoObjetoFilter" placeholder="Digite o número do objeto">
+                </div>
+                
+                <div class="filter-group">
+                    <label for="prazoEnderecoFilter">
+                        <span class="icon">📍</span>
+                        Buscar Endereço:
+                    </label>
+                    <input type="text" id="prazoEnderecoFilter" placeholder="Digite parte do endereço">
+                </div>
+                
+                <div class="filter-group">
+                    <label for="prazoDiasFilter">
+                        <span class="icon">⏳</span>
+                        Dias Restantes:
+                    </label>
+                    <select id="prazoDiasFilter">
+                        <option value="">Todos</option>
+                        <option value="atrasado">Atrasados (< 0)</option>
+                        <option value="hoje">Vence Hoje (0)</option>
+                        <option value="1-3">1 a 3 dias</option>
+                        <option value="4-7">4 a 7 dias</option>
+                        <option value="8-15">8 a 15 dias</option>
+                        <option value="15+">Mais de 15 dias</option>
+                    </select>
+                </div>
+                
+                <div class="filter-actions">
+                    <button id="clearPrazoFilters" class="secondary-button">
+                        <span class="icon">🗑️</span>
+                        Limpar Filtros
+                    </button>
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <button id="generatePrazoReport" class="primary-button">
+                    <span class="icon">⏰</span>
+                    Gerar Relatório de Prazos
+                </button>
+            </div>
+        </div>
+        
+        <div id="prazoSummarySection" class="summary-grid"></div>
+        
+        <table id="prazoTable">
+            <thead>
+                <tr>
+                    <th class="sortable" data-column="distrito">
+                        Distrito
+                        <span class="sort-indicator">↕️</span>
+                    </th>
+                    <th class="sortable" data-column="objeto">
+                        Objeto
+                        <span class="sort-indicator">↕️</span>
+                    </th>
+                    <th class="sortable" data-column="endereco">
+                        Endereço
+                        <span class="sort-indicator">↕️</span>
+                    </th>
+                    <th class="sortable" data-column="prazoFinal">
+                        Prazo Final
+                        <span class="sort-indicator">↕️</span>
+                    </th>
+                    <th class="sortable" data-column="status">
+                        Status
+                        <span class="sort-indicator">↕️</span>
+                    </th>
+                    <th class="sortable" data-column="diasRestantes">
+                        Dias Restantes
+                        <span class="sort-indicator">↕️</span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    
+    <!-- Aba: Conferência Física -->
+    <div id="conferencia-fisica" class="tab-content">
+        <div class="controls-section">
+            <div class="filter-section">
+                <div class="filter-group">
+                    <label for="conferenciaDistritoFilter">
+                        <span class="icon">🏢</span>
+                        Distrito:
+                    </label>
+                    <select id="conferenciaDistritoFilter">
+                        <option value="">Selecione um Distrito</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="objetoInput">
+                        <span class="icon">📦</span>
+                        Número do Objeto:
+                    </label>
+                    <input type="text" id="objetoInput" placeholder="Digite ou escaneie o número do objeto (ex: AB527084135BR)" maxlength="13">
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <button id="addObjeto" class="primary-button">
+                    <span class="icon">➕</span>
+                    Adicionar Objeto
+                </button>
+                <button id="clearConferencia" class="secondary-button">
+                    <span class="icon">🗑️</span>
+                    Limpar Lista
+                </button>
+            </div>
+        </div>
+        
+        <div id="conferenciaSummarySection" class="summary-grid"></div>
+        
+        <table id="conferenciaTable">
+            <thead>
+                <tr>
+                    <th>Objeto</th>
+                    <th>Status</th>
+                    <th>Endereço</th>
+                    <th>Observação</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    
+    <!-- Aba: Acompanhamento de Distribuição -->
+    <div id="acompanhamento-distribuicao" class="tab-content">
+        <div class="controls-section">
+            <div class="filter-section">
+                <div class="filter-group">
+                    <label for="distribuicaoDistritoFilter">
+                        <span class="icon">🏢</span>
+                        Distrito:
+                    </label>
+                    <select id="distribuicaoDistritoFilter">
+                        <option value="">Todos os Distritos</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <button id="generateDistribuicaoReport" class="primary-button">
+                    <span class="icon">🚚</span>
+                    Gerar Relatório de Acompanhamento
+                </button>
+            </div>
+        </div>
+        
+        <div id="distribuicaoSummarySection" class="summary-grid"></div>
+        
+        <!-- Tabela de Itinerário -->
+        <div id="itinerarioSection" style="display: none;">
+            <h3>Itinerário do Carteiro</h3>
+            <table id="itinerarioTable">
+                <thead>
+                    <tr>
+                        <th>Objeto</th>
+                        <th>Endereço</th>
+                        <th>Horário da Baixa</th>
+                        <th>Status</th>
+                        <th>Tempo desde a última baixa</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        
+        <!-- Relatório Estatístico -->
+        <div id="estatisticasSection" style="display: none;">
+            <h3>Estatísticas por Status</h3>
+            <div id="estatisticasGrid" class="summary-grid"></div>
+            <table id="estatisticasTable">
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>Quantidade</th>
+                        <th>Percentual</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Aba: Conferência de Devoluções -->
+    <div id="conferencia-devolucoes" class="tab-content">
+        <div class="controls-section">
+            <div class="filter-section">
+                <div class="filter-group">
+                    <label for="devolucaoDistritoFilter">
+                        <span class="icon">🏢</span>
+                        Distrito:
+                    </label>
+                    <select id="devolucaoDistritoFilter">
+                        <option value="">Selecione um Distrito</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="devolucaoObjetoInput">
+                        <span class="icon">📦</span>
+                        Número do Objeto:
+                    </label>
+                    <input type="text" id="devolucaoObjetoInput" placeholder="Digite ou escaneie o número do objeto (ex: AB527084135BR)" maxlength="13">
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <button id="addObjetoDevolucao" class="primary-button">
+                    <span class="icon">➕</span>
+                    Adicionar Objeto
+                </button>
+                <button id="clearDevolucao" class="secondary-button">
+                    <span class="icon">🗑️</span>
+                    Limpar Lista
+                </button>
+                <button id="generateDevolucaoReport" class="secondary-button">
+                    <span class="icon">📋</span>
+                    Gerar Lista de Devoluções
+                </button>
+            </div>
+        </div>
+        
+        <div id="devolucaoSummarySection" class="summary-grid"></div>
+        
+        <!-- Lista de Devoluções Esperadas -->
+        <div id="devolucaoEsperadaSection" style="display: none;">
+            <h3>Objetos para Devolução - <span id="devolucaoDistritoTitle"></span></h3>
+            <table id="devolucaoEsperadaTable">
+                <thead>
+                    <tr>
+                        <th>Objeto</th>
+                        <th>Status</th>
+                        <th>Endereço</th>
+                        <th>Situação</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        
+        <!-- Conferência de Devoluções -->
+        <div id="devolucaoConferenciaSection" style="display: none;">
+            <h3>Conferência de Devoluções</h3>
+            <table id="devolucaoConferenciaTable">
+                <thead>
+                    <tr>
+                        <th>Objeto</th>
+                        <th>Status</th>
+                        <th>Endereço</th>
+                        <th>Situação da Conferência</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Aba: Gerenciamento de Objetos -->
+    <div id="gerenciamento-objetos" class="tab-content">
+        <div class="controls-section">
+            <div class="search-section">
+                <div class="search-group">
+                    <label for="objetoSearchInput">Buscar Objeto:</label>
+                    <div class="input-group">
+                        <input type="text" id="objetoSearchInput" placeholder="Digite o número do objeto (ex: AB123456789BR)" maxlength="13">
+                        <button id="searchObjetoBtn" class="primary-button">
+                            <span class="icon">🔍</span>
+                            Buscar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Informações do Objeto Encontrado -->
+        <div id="objetoInfoSection" class="info-section" style="display: none;">
+            <h3>Informações do Objeto</h3>
+            <div class="objeto-info-card">
+                <div class="info-row">
+                    <strong>Objeto:</strong> <span id="objetoNumero"></span>
+                </div>
+                <div class="info-row">
+                    <strong>Endereço:</strong> <span id="objetoEndereco"></span>
+                </div>
+                <div class="info-row">
+                    <strong>Lista Atual:</strong> <span id="objetoListaAtual"></span>
+                </div>
+                <div class="info-row">
+                    <strong>Distrito Atual:</strong> <span id="objetoDistritoAtual"></span>
+                </div>
+                <div class="info-row">
+                    <strong>Funcionário Atual:</strong> <span id="objetoFuncionarioAtual"></span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Seção de Movimentação -->
+        <div id="movimentacaoSection" class="movimentacao-section" style="display: none;">
+            <h3>Mover Objeto para Outro Distrito/Lista</h3>
+            <div class="movimentacao-controls">
+                <div class="filter-group">
+                    <label for="novoDistritoSelect">Novo Distrito:</label>
+                    <select id="novoDistritoSelect">
+                        <option value="">Selecione um distrito</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="novaListaSelect">Nova Lista:</label>
+                    <select id="novaListaSelect">
+                        <option value="">Selecione uma lista</option>
+                    </select>
+                </div>
+                <div class="movimentacao-actions">
+                    <button id="confirmarMovimentacaoBtn" class="primary-button" disabled>
+                        <span class="icon">✅</span>
+                        Confirmar Movimentação
+                    </button>
+                    <button id="cancelarMovimentacaoBtn" class="secondary-button">
+                        <span class="icon">❌</span>
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Histórico de Movimentações -->
+        <div id="historicoSection" class="historico-section">
+            <h3>Histórico de Movimentações</h3>
+            <div class="historico-controls">
+                <button id="exportarHistoricoBtn" class="secondary-button">
+                    <span class="icon">📤</span>
+                    Exportar Histórico
+                </button>
+                <button id="limparHistoricoBtn" class="secondary-button">
+                    <span class="icon">🗑️</span>
+                    Limpar Histórico
+                </button>
+            </div>
+            <table id="historicoTable">
+                <thead>
+                    <tr>
+                        <th>Data/Hora</th>
+                        <th>Objeto</th>
+                        <th>De (Distrito/Lista)</th>
+                        <th>Para (Distrito/Lista)</th>
+                        <th>Usuário</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Atalhos de teclado -->
+    <div class="keyboard-shortcuts" style="display: none;">
+        <h3>Atalhos de Teclado</h3>
+        <ul>
+            <li><kbd>F1</kbd> - Abrir ajuda</li>
+            <li><kbd>Ctrl+D</kbd> - Abrir configuração de bancos</li>
+            <li><kbd>Ctrl+R</kbd> - Gerar relatório</li>
+            <li><kbd>Ctrl+F</kbd> - Buscar pontos coincidentes</li>
+            <li><kbd>Ctrl+E</kbd> - Exportar para Excel</li>
+            <li><kbd>Ctrl+P</kbd> - Imprimir</li>
+            <li><kbd>Ctrl+→</kbd> - Próxima aba</li>
+            <li><kbd>Ctrl+←</kbd> - Aba anterior</li>
+            <li><kbd>F11</kbd> - Alternar modo escuro</li>
+            <li><kbd>ESC</kbd> - Fechar modal</li>
+        </ul>
+    </div>
+
+    <!-- Botão para mostrar atalhos -->
+    <button id="showShortcuts" class="help-button" onclick="toggleShortcuts()">
+        <span class="icon">⌨️</span>
+        Atalhos
+    </button>
+
+    <footer>
+        <p>Copyright © Todos os direitos reservados</p>
+        <p>Criado por Luiz C S Paula</p>
+        <p>Versão: 5.8.0 - Melhorias: Acompanhamento de Distribuição, Conferência de Devoluções, Análise de Itinerário</p>
+    </footer>
+
+    <script src="script_v5.7.0.js"></script>
+    <script>
+        function toggleShortcuts() {
+            const shortcuts = document.querySelector('.keyboard-shortcuts');
+            if (shortcuts.style.display === 'none') {
+                shortcuts.style.display = 'block';
+                shortcuts.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                shortcuts.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
+
